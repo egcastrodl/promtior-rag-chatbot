@@ -1,6 +1,6 @@
-from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
+from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -9,14 +9,17 @@ import os
 
 PDF_PATH = "data/promtior/data.pdf"
 INDEX_PATH = "data/faiss_index"
-
+INDEX_FILE = "index.pkl"  # Nombre del archivo FAISS
 
 def build_rag_chain():
-    # Embeddings para el vectorstore
     embeddings = OllamaEmbeddings(model="phi3")
 
+    # Crear carpeta si no existe
+    os.makedirs(INDEX_PATH, exist_ok=True)
+
     # Cargar o crear índice FAISS
-    if os.path.exists(INDEX_PATH):
+    index_path_full = os.path.join(INDEX_PATH, INDEX_FILE)
+    if os.path.exists(index_path_full):
         vectorstore = FAISS.load_local(
             INDEX_PATH,
             embeddings,
@@ -37,7 +40,6 @@ def build_rag_chain():
 
     retriever = vectorstore.as_retriever()
 
-    # Prompt para RAG
     prompt = ChatPromptTemplate.from_template("""
 Answer ONLY using the following context.
 If the answer is not present, say you don't know.
@@ -49,16 +51,15 @@ Question:
 {question}
 """)
 
-    # URL de Ollama desde env var, default a localhost
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
     llm = OllamaLLM(model="phi3", base_url=OLLAMA_URL)
 
     return (
-            {
-                "context": retriever,
-                "question": RunnablePassthrough()
-            }
-            | prompt
-            | llm
-            | StrOutputParser()
+        {
+            "context": retriever,
+            "question": RunnablePassthrough()
+        }
+        | prompt
+        | llm
+        | StrOutputParser()
     )

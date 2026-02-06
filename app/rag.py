@@ -11,9 +11,12 @@ import os
 PDF_PATH = "data/promtior/data.pdf"
 INDEX_PATH = "data/faiss_index"
 
+
 def build_rag_chain():
+    # Embeddings para el vectorstore
     embeddings = OllamaEmbeddings(model="phi3")
 
+    # Cargar o crear índice FAISS
     if os.path.exists(INDEX_PATH):
         vectorstore = FAISS.load_local(
             INDEX_PATH,
@@ -35,25 +38,28 @@ def build_rag_chain():
 
     retriever = vectorstore.as_retriever()
 
+    # Prompt para RAG
     prompt = ChatPromptTemplate.from_template("""
-Answer ONLY using the following context.
-If the answer is not present, say you don't know.
+    Answer ONLY using the following context.
+    If the answer is not present, say you don't know.
 
-Context:
-{context}
+    Context:
+    {context}
 
-Question:
-{question}
-""")
+    Question:
+    {question}
+    """)
 
-    llm = Ollama(model="phi3")
+    # URL de Ollama desde env var, default a localhost
+    OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    llm = Ollama(model="phi3", base_url=OLLAMA_URL)
 
     return (
-        {
-            "context": retriever,
-            "question": RunnablePassthrough()
-        }
-        | prompt
-        | llm
-        | StrOutputParser()
+            {
+                "context": retriever,
+                "question": RunnablePassthrough()
+            }
+            | prompt
+            | llm
+            | StrOutputParser()
     )

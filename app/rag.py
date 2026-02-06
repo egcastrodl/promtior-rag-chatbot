@@ -8,19 +8,23 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 
 # Use paths relative to repo root
-PDF_PATH = os.path.join(os.getcwd(), "data/promtior/data.pdf")
-INDEX_PATH = os.path.join(os.getcwd(), "data/faiss_index")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PDF_PATH = os.path.join(BASE_DIR, "data/promtior/data.pdf")
+INDEX_PATH = os.path.join(BASE_DIR, "data/faiss_index")
 INDEX_FILE = "index.pkl"
 
+# Use a lighter model to reduce memory consumption
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "nano")
+
 def build_rag_chain():
-    embeddings = OllamaEmbeddings(model="phi3")
+    # Create embeddings
+    embeddings = OllamaEmbeddings(model=OLLAMA_MODEL)
 
     # Ensure FAISS directory exists
     os.makedirs(INDEX_PATH, exist_ok=True)
-
     index_path_full = os.path.join(INDEX_PATH, INDEX_FILE)
 
-    # Load existing FAISS index or create new one
+    # Load existing FAISS index or create a new one from PDF
     if os.path.exists(index_path_full):
         vectorstore = FAISS.load_local(
             INDEX_PATH,
@@ -45,6 +49,7 @@ def build_rag_chain():
 
     retriever = vectorstore.as_retriever()
 
+    # Prompt template
     prompt = ChatPromptTemplate.from_template("""
 Answer ONLY using the following context.
 If the answer is not present, say you don't know.
@@ -56,9 +61,11 @@ Question:
 {question}
 """)
 
+    # Ollama URL from env var, default to localhost
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    llm = OllamaLLM(model="phi3", base_url=OLLAMA_URL)
+    llm = OllamaLLM(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
 
+    # Build RAG chain
     return (
         {
             "context": retriever,

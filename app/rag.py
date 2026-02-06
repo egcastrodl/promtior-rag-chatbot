@@ -1,12 +1,11 @@
+import os
+from langchain_ollama import OllamaEmbeddings, Ollama
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.llms import Ollama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-import os
 
 PDF_PATH = "data/promtior/data.pdf"
 INDEX_PATH = "data/faiss_index"
@@ -16,8 +15,12 @@ def build_rag_chain():
     # Embeddings para el vectorstore
     embeddings = OllamaEmbeddings(model="phi3")
 
+    # Asegurarse de que la carpeta del índice exista
+    os.makedirs(INDEX_PATH, exist_ok=True)
+
     # Cargar o crear índice FAISS
-    if os.path.exists(INDEX_PATH):
+    index_file = os.path.join(INDEX_PATH, "index.pkl")
+    if os.path.exists(index_file):
         vectorstore = FAISS.load_local(
             INDEX_PATH,
             embeddings,
@@ -40,26 +43,26 @@ def build_rag_chain():
 
     # Prompt para RAG
     prompt = ChatPromptTemplate.from_template("""
-    Answer ONLY using the following context.
-    If the answer is not present, say you don't know.
+Answer ONLY using the following context.
+If the answer is not present, say you don't know.
 
-    Context:
-    {context}
+Context:
+{context}
 
-    Question:
-    {question}
-    """)
+Question:
+{question}
+""")
 
     # URL de Ollama desde env var, default a localhost
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
     llm = Ollama(model="phi3", base_url=OLLAMA_URL)
 
     return (
-            {
-                "context": retriever,
-                "question": RunnablePassthrough()
-            }
-            | prompt
-            | llm
-            | StrOutputParser()
+        {
+            "context": retriever,
+            "question": RunnablePassthrough()
+        }
+        | prompt
+        | llm
+        | StrOutputParser()
     )

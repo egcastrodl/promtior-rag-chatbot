@@ -90,7 +90,7 @@ Question:
     # Internal URL for Ollama service in Railway
     # Use environment variable if available, fallback to internal hostname
     # ------------------------------
-    OLLAMA_URL = os.getenv("OLLAMA_URL", "ollama-production-0351.up.railway.app")
+    OLLAMA_URL = os.getenv("OLLAMA_URL", "http://Ollama.railway.internal:11434")
 
     llm = OllamaLLM(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
 

@@ -86,7 +86,12 @@ Question:
 """)
 
     # Ollama server URL (defaults to localhost)
-    OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    # ------------------------------
+    # Internal URL for Ollama service in Railway
+    # Use environment variable if available, fallback to internal hostname
+    # ------------------------------
+    OLLAMA_URL = os.getenv("OLLAMA_URL", "http://Ollama.railway.internal:11434")
+
     llm = OllamaLLM(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
 
     # Build and return the RAG chain

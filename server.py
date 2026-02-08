@@ -9,13 +9,12 @@ app = FastAPI(
     description="RAG chatbot using LangChain + Ollama"
 )
 
-# Build RAG chain
-rag_chain = build_rag_chain()
+def get_rag_chain():
+    return build_rag_chain()
 
-# Expose the RAG chain
 add_routes(
     app,
-    rag_chain,
+    get_rag_chain,
     path="/rag"
 )
 

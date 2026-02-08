@@ -9,16 +9,18 @@ app = FastAPI(
     description="RAG chatbot using LangChain + Ollama"
 )
 
-def get_rag_chain():
-    return build_rag_chain()
+# ✅ BUILD THE CHAIN (Runnable)
+rag_chain = build_rag_chain()
 
+# ✅ EXPOSE IT
 add_routes(
     app,
-    get_rag_chain,
+    rag_chain,
     path="/rag"
 )
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
     import uvicorn
+
+    port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
